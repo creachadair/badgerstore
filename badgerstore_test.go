@@ -15,14 +15,15 @@
 package badgerstore_test
 
 import (
+	"context"
 	"flag"
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/creachadair/badgerstore"
 	"github.com/creachadair/ffs/blob/storetest"
-	"github.com/dgraph-io/badger/v2"
 )
 
 var keepOutput = flag.Bool("keep", false, "Keep test output after running")
@@ -37,15 +38,12 @@ func TestStore(t *testing.T) {
 		defer os.RemoveAll(dir) // best effort cleanup
 	}
 
-	opts := badger.DefaultOptions
-	opts.Dir = dir
-	opts.ValueDir = dir
-	s, err := badgerstore.New(opts)
+	s, err := badgerstore.Opener(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("Creating store in %q: %v", dir, err)
 	}
 	storetest.Run(t, s)
-	if err := s.Close(); err != nil {
+	if err := s.(io.Closer).Close(); err != nil {
 		t.Errorf("Closing store: %v", err)
 	}
 }

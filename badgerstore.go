@@ -31,11 +31,7 @@ type Store struct {
 // with the store package.
 func Opener(_ context.Context, addr string) (blob.Store, error) {
 	// TODO: Parse other options out of the address string somehow.
-	opts := badger.DefaultOptions
-	opts.Dir = addr
-	opts.ValueDir = addr
-	opts.Logger = nil
-	return New(opts)
+	return NewPath(addr)
 }
 
 // New creates a Store by opening the Badger database specified by opts.
@@ -45,6 +41,16 @@ func New(opts badger.Options) (*Store, error) {
 		return nil, err
 	}
 	return &Store{db: db}, nil
+}
+
+// NewPath creates a Store by opening a Badger database with default options at
+// the specified path.
+func NewPath(path string) (*Store, error) {
+	opts := badger.DefaultOptions
+	opts.Dir = path
+	opts.ValueDir = path
+	opts.Logger = nil
+	return New(opts)
 }
 
 // Close implements the io.Closer interface. It closes the underlying database
