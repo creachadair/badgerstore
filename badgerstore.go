@@ -19,7 +19,7 @@ import (
 	"context"
 
 	"github.com/creachadair/ffs/blob"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger"
 )
 
 // Store implements the blob.Store interface using a Badger key-value store.
@@ -46,11 +46,7 @@ func New(opts badger.Options) (*Store, error) {
 // NewPath creates a Store by opening a Badger database with default options at
 // the specified path.
 func NewPath(path string) (*Store, error) {
-	opts := badger.DefaultOptions
-	opts.Dir = path
-	opts.ValueDir = path
-	opts.Logger = nil
-	return New(opts)
+	return New(badger.DefaultOptions(path).WithLogger(nil))
 }
 
 // Close implements the io.Closer interface. It closes the underlying database
