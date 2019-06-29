@@ -46,11 +46,13 @@ func New(opts badger.Options) (*Store, error) {
 // NewPath creates a Store by opening a Badger database with default options at
 // the specified path.
 func NewPath(path string) (*Store, error) {
-	opts := badger.DefaultOptions
-	opts.Dir = path
-	opts.ValueDir = path
-	opts.Logger = nil
-	return New(opts)
+	return New(badger.DefaultOptions(path).WithLogger(nil))
+}
+
+// NewPathReadOnly creates a Store by opening a Badger database with read only
+// options at the specified path.
+func NewPathReadOnly(path string) (*Store, error) {
+	return New(badger.DefaultOptions(path).WithLogger(nil).WithReadOnly(true))
 }
 
 // Close implements the io.Closer interface. It closes the underlying database
