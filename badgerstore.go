@@ -49,6 +49,12 @@ func NewPath(path string) (*Store, error) {
 	return New(badger.DefaultOptions(path).WithLogger(nil))
 }
 
+// NewPathReadOnly creates a Store around a read-only Badger instance with
+// default options at the specified path.
+func NewPathReadOnly(path string) (*Store, error) {
+	return New(badger.DefaultOptions(path).WithLogger(nil).WithReadOnly(true))
+}
+
 // Close implements the io.Closer interface. It closes the underlying database
 // instance and reports its result.
 func (s *Store) Close() error { return s.db.Close() }
