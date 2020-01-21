@@ -19,7 +19,7 @@ import (
 	"context"
 
 	"github.com/creachadair/ffs/blob"
-	"github.com/dgraph-io/badger"
+	badger "github.com/dgraph-io/badger/v2"
 )
 
 // Store implements the blob.Store interface using a Badger key-value store.
