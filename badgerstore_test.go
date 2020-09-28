@@ -29,7 +29,7 @@ import (
 var keepOutput = flag.Bool("keep", false, "Keep test output after running")
 
 func TestStore(t *testing.T) {
-	dir, err := ioutil.TempDir("", "filestore")
+	dir, err := ioutil.TempDir("", "badgerstore")
 	if err != nil {
 		t.Fatalf("Creating temp directory: %v", err)
 	}
