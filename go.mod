@@ -14,8 +14,8 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.6.1 // indirect
-	golang.org/x/net v0.0.0-20210420210106-798c2154c571 // indirect
-	golang.org/x/sys v0.0.0-20210420205809-ac73e9fd8988 // indirect
+	golang.org/x/net v0.0.0-20210508051633-16afe75a6701 // indirect
+	golang.org/x/sys v0.0.0-20210507161434-a76c4d0a0096 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
 )
