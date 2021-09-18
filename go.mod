@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/DataDog/zstd v1.4.8 // indirect
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/creachadair/ffs v0.0.0-20210914142155-62a96784b059
+	github.com/creachadair/ffs v0.0.0-20210918231813-566ca7567e21
 	github.com/dgraph-io/badger/v2 v2.2007.3
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
@@ -19,7 +19,7 @@ require (
 
 require (
 	github.com/cespare/xxhash v1.1.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
