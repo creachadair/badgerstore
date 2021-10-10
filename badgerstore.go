@@ -22,16 +22,16 @@ import (
 	badger "github.com/dgraph-io/badger/v2"
 )
 
-// Store implements the blob.Store interface using a Badger key-value store.
-type Store struct {
-	db *badger.DB
-}
-
 // Opener constructs a filestore from an address comprising a path, for use
 // with the store package.
 func Opener(_ context.Context, addr string) (blob.Store, error) {
 	// TODO: Parse other options out of the address string somehow.
 	return NewPath(addr)
+}
+
+// Store implements the blob.Store interface using a Badger key-value store.
+type Store struct {
+	db *badger.DB
 }
 
 // New creates a Store by opening the Badger database specified by opts.
