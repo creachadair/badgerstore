@@ -77,17 +77,22 @@ func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
 // Put implements part of blob.Store.
 func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 	key := []byte(opts.Key)
-	return s.db.Update(func(txn *badger.Txn) error {
-		if !opts.Replace {
-			_, err := txn.Get(key)
-			if err == nil {
-				return blob.KeyExists(opts.Key)
-			} else if err != badger.ErrKeyNotFound {
-				return err
+	for {
+		err := s.db.Update(func(txn *badger.Txn) error {
+			if !opts.Replace {
+				_, err := txn.Get(key)
+				if err == nil {
+					return blob.KeyExists(opts.Key)
+				} else if err != badger.ErrKeyNotFound {
+					return err
+				}
 			}
+			return txn.Set(key, opts.Data)
+		})
+		if err != badger.ErrConflict {
+			return err
 		}
-		return txn.Set(key, opts.Data)
-	})
+	}
 }
 
 // Size implements part of blob.Store.
@@ -113,16 +118,21 @@ func (s *Store) Delete(_ context.Context, key string) error {
 	if key == "" {
 		return blob.KeyNotFound(key) // badger cannot store empty keys
 	}
-	return s.db.Update(func(txn *badger.Txn) error {
-		byteKey := []byte(key)
-		_, err := txn.Get(byteKey)
-		if err == nil {
-			return txn.Delete(byteKey)
-		} else if err == badger.ErrKeyNotFound {
-			return blob.KeyNotFound(key)
+	for {
+		err := s.db.Update(func(txn *badger.Txn) error {
+			byteKey := []byte(key)
+			_, err := txn.Get(byteKey)
+			if err == nil {
+				return txn.Delete(byteKey)
+			} else if err == badger.ErrKeyNotFound {
+				return blob.KeyNotFound(key)
+			}
+			return err
+		})
+		if err != badger.ErrConflict {
+			return err
 		}
-		return err
-	})
+	}
 }
 
 // List implements part of blob.Store.
