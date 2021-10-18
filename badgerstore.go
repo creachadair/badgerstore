@@ -17,6 +17,7 @@ package badgerstore
 
 import (
 	"context"
+	"errors"
 
 	"github.com/creachadair/ffs/blob"
 	badger "github.com/dgraph-io/badger/v2"
@@ -89,7 +90,7 @@ func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 			}
 			return txn.Set(key, opts.Data)
 		})
-		if err != badger.ErrConflict {
+		if !errors.Is(err, badger.ErrConflict) {
 			return err
 		}
 	}
@@ -129,7 +130,7 @@ func (s *Store) Delete(_ context.Context, key string) error {
 			}
 			return err
 		})
-		if err != badger.ErrConflict {
+		if !errors.Is(err, badger.ErrConflict) {
 			return err
 		}
 	}
