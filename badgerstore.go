@@ -20,7 +20,7 @@ import (
 	"errors"
 
 	"github.com/creachadair/ffs/blob"
-	badger "github.com/dgraph-io/badger/v2"
+	badger "github.com/dgraph-io/badger/v3"
 )
 
 // Opener constructs a filestore from an address comprising a path, for use
