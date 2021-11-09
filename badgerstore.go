@@ -18,16 +18,37 @@ package badgerstore
 import (
 	"context"
 	"errors"
+	"net/url"
+	"path/filepath"
 
 	"github.com/creachadair/ffs/blob"
 	badger "github.com/dgraph-io/badger/v3"
 )
 
-// Opener constructs a filestore from an address comprising a path, for use
-// with the store package.
+// Opener constructs a filestore from an address comprising a URL, for use with
+// the store package. The host and path of the URL give the path of the
+// database directory. Optional query parameters include:
+//
+//   read_only   : open the database in read-only mode
+//
 func Opener(_ context.Context, addr string) (blob.Store, error) {
-	// TODO: Parse other options out of the address string somehow.
-	return NewPath(addr)
+	opts, err := parseOptions(addr)
+	if err != nil {
+		return nil, err
+	}
+	return New(opts)
+}
+
+func parseOptions(addr string) (badger.Options, error) {
+	u, err := url.Parse(addr)
+	if err != nil {
+		return badger.Options{}, err
+	}
+	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
+	opts := badger.DefaultOptions(filePath).WithLogger(nil)
+	_, ro := u.Query()["read_only"]
+	opts.ReadOnly = ro
+	return opts, nil
 }
 
 // Store implements the blob.Store interface using a Badger key-value store.
