@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/creachadair/ffs/blob"
+	"github.com/creachadair/taskgroup"
 	badger "github.com/dgraph-io/badger/v3"
 )
 
@@ -179,16 +180,39 @@ func (s *Store) List(_ context.Context, start string, f func(string) error) erro
 
 // Len implements part of blob.Store.
 func (s *Store) Len(ctx context.Context) (int64, error) {
-	var numKeys int64
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	g := taskgroup.New(taskgroup.Trigger(cancel))
 
-	err := s.db.View(func(txn *badger.Txn) error {
-		it := txn.NewIterator(badger.IteratorOptions{})
-		defer it.Close()
+	sizes := make([]int64, 256)
+	for i := 0; i < 256; i++ {
+		pfx, i := []byte{byte(i)}, i
 
-		for it.Rewind(); it.Valid(); it.Next() {
-			numKeys++
-		}
-		return nil
-	})
-	return numKeys, err
+		g.Go(func() error {
+			return s.db.View(func(txn *badger.Txn) error {
+				it := txn.NewIterator(badger.IteratorOptions{
+					Prefix: pfx,
+				})
+				defer it.Close()
+
+				for it.Rewind(); it.Valid(); it.Next() {
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					default:
+						sizes[i]++
+					}
+				}
+				return nil
+			})
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return 0, err
+	}
+	var total int64
+	for _, size := range sizes {
+		total += size
+	}
+	return total, nil
 }

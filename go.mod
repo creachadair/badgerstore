@@ -15,7 +15,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
 )
 
-require github.com/dgraph-io/badger/v3 v3.2103.2
+require (
+	github.com/creachadair/taskgroup v0.3.1
+	github.com/dgraph-io/badger/v3 v3.2103.2
+)
 
 require (
 	github.com/cespare/xxhash v1.1.0 // indirect
