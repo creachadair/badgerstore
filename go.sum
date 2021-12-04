@@ -18,8 +18,8 @@ github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3Ee
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=
 github.com/creachadair/atomicfile v0.2.2/go.mod h1:BRq8Une6ckFneYXZQ+kO7p1ZZP3I2fzVzf28JxrIkBc=
 github.com/creachadair/ffs v0.0.0-20211013230823-ae39e39f88f2/go.mod h1:MVxbSGbJi3n6az0h3DYBEauFTzOawCFmh0W5vL3tzzw=
-github.com/creachadair/ffs v0.0.0-20211203034358-6ad1f6b276b4 h1:K4Zy4jFzA29Yu+jHzEd4iW3ltzN7XNMMtukmsR4bbgc=
-github.com/creachadair/ffs v0.0.0-20211203034358-6ad1f6b276b4/go.mod h1:BNrBgicjh5a9fi/kyaz6r/oGMjYXbm3nQ/uSo/v4MHo=
+github.com/creachadair/ffs v0.0.0-20211203161202-a32f5e5fbf25 h1:pqmnyvNKCdXhc9nKOhQ4HCzzUc1UnFLHoyZCb2XeIe4=
+github.com/creachadair/ffs v0.0.0-20211203161202-a32f5e5fbf25/go.mod h1:BNrBgicjh5a9fi/kyaz6r/oGMjYXbm3nQ/uSo/v4MHo=
 github.com/creachadair/ffs/storage v0.0.0-20211014020421-4f17f651dc77/go.mod h1:JbHoXzCTKfIYF9e+uLhAZkomzMwAD/5B9X3TYuWgaAM=
 github.com/creachadair/taskgroup v0.3.1 h1:Mpi0sc005YWdsDEJsh8vGPOygp9b0rLR0OW6VBOp9Pc=
 github.com/creachadair/taskgroup v0.3.1/go.mod h1:q490pQxvbLXtIe4w8xlf5tcO6RR1AhRfWHXO0MotmHs=
@@ -140,8 +140,8 @@ golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLL
 golang.org/x/net v0.0.0-20200226121028-0de0cce0169b/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20201021035429-f5854403a974/go.mod h1:sp8m0HH+o8qH0wwXwYZr8TS3Oi6o0r6Gce1SSxlDquU=
 golang.org/x/net v0.0.0-20201110031124-69a78807bb2b/go.mod h1:sp8m0HH+o8qH0wwXwYZr8TS3Oi6o0r6Gce1SSxlDquU=
-golang.org/x/net v0.0.0-20211201190559-0a0e4e1bb54c h1:WtYZ93XtWSO5KlOMgPZu7hXY9WhMZpprvlm5VwvAl8c=
-golang.org/x/net v0.0.0-20211201190559-0a0e4e1bb54c/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/net v0.0.0-20211203184738-4852103109b8 h1:PFkPt/jI9Del3hmFplBtRp8tDhSRpFu7CyRs7VmEC0M=
+golang.org/x/net v0.0.0-20211203184738-4852103109b8/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20181108010431-42b317875d0f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
