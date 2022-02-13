@@ -46,7 +46,7 @@ func parseOptions(addr string) (badger.Options, error) {
 		return badger.Options{}, err
 	}
 	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
-	opts := badger.DefaultOptions(filePath).WithLogger(nil)
+	opts := badger.DefaultOptions(filePath).WithIndexCacheSize(100 << 20).WithLogger(nil)
 	_, ro := u.Query()["read_only"]
 	opts.ReadOnly = ro
 	return opts, nil
