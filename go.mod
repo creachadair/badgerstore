@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/creachadair/ffs v0.0.0-20220602213156-2ac4d166f206
+	github.com/creachadair/ffs v0.0.0-20220608152724-a6e04e75a6c2
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/golang/glog v1.0.0 // indirect
