@@ -10,7 +10,7 @@ require (
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
+	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c // indirect
 )
 
