@@ -30,8 +30,7 @@ import (
 // the store package. The host and path of the URL give the path of the
 // database directory. Optional query parameters include:
 //
-//   read_only   : open the database in read-only mode
-//
+//	read_only   : open the database in read-only mode
 func Opener(_ context.Context, addr string) (blob.Store, error) {
 	opts, err := parseOptions(addr)
 	if err != nil {
