@@ -25,7 +25,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v22.10.26+incompatible // indirect
+	github.com/google/flatbuffers v22.11.23+incompatible // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
