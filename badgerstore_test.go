@@ -16,33 +16,56 @@ package badgerstore_test
 
 import (
 	"context"
-	"flag"
-	"io"
-	"os"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/creachadair/badgerstore"
+	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/ffs/blob/storetest"
 )
 
-var keepOutput = flag.Bool("keep", false, "Keep test output after running")
-
 func TestStore(t *testing.T) {
-	dir, err := os.MkdirTemp("", "badgerstore")
-	if err != nil {
-		t.Fatalf("Creating temp directory: %v", err)
-	}
-	t.Logf("Test store: %s", dir)
-	if !*keepOutput {
-		defer os.RemoveAll(dir) // best effort cleanup
-	}
+	dir := t.TempDir()
 
+	t.Logf("Test store: %s", dir)
 	s, err := badgerstore.Opener(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("Creating store in %q: %v", dir, err)
 	}
 	storetest.Run(t, s)
-	if err := s.(io.Closer).Close(); err != nil {
+	if err := blob.CloseStore(context.Background(), s); err != nil {
+		t.Errorf("Closing store: %v", err)
+	}
+}
+
+func TestListCancel(t *testing.T) {
+	dir := t.TempDir()
+	ctx := context.Background()
+
+	t.Logf("Test store: %s", dir)
+	s, err := badgerstore.Opener(ctx, dir)
+	if err != nil {
+		t.Fatalf("Creating store in %q: %v", dir, err)
+	}
+	if err := s.Put(ctx, blob.PutOptions{
+		Key:  "test key 1",
+		Data: []byte("ok boomer"),
+	}); err != nil {
+		t.Fatalf("Put failed: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+	err = s.List(ctx, "", func(string) error {
+		time.Sleep(1 * time.Second)
+		return nil
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("Wrong error: got %v, want %v", err, context.DeadlineExceeded)
+	}
+
+	if err := blob.CloseStore(context.Background(), s); err != nil {
 		t.Errorf("Closing store: %v", err)
 	}
 }
