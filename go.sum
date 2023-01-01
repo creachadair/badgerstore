@@ -16,10 +16,10 @@ github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=
-github.com/creachadair/ffs v0.0.0-20221231175928-c881536abce3 h1:S/O++Zl/llxTmdbQSjymjpxzzEyTXGrmNkKStZFFROQ=
-github.com/creachadair/ffs v0.0.0-20221231175928-c881536abce3/go.mod h1:mRveFd263Js757hNDcj5tuB2TyDvmRlZ9RTLIIml5lA=
-github.com/creachadair/taskgroup v0.3.2 h1:zlfutDS+5XG40AOxcHDSThxKzns8Tnr9jnr6VqkYlkM=
-github.com/creachadair/taskgroup v0.3.2/go.mod h1:wieWwecHVzsidg2CsUnFinW1faVN4+kq+TDlRJQ0Wbk=
+github.com/creachadair/ffs v0.0.0-20221231232903-d038b58b6302 h1:Qiaoy4Id8N1kNyRHVgrnceUxT0eLdhMj8W5jEpiv6O4=
+github.com/creachadair/ffs v0.0.0-20221231232903-d038b58b6302/go.mod h1:6eyRjEfI8nh3COywjcBI2gnpot1tb5yoWZskeih5Ofw=
+github.com/creachadair/taskgroup v0.4.1 h1:CVYrrZZQQ3ly+b1trJCi6Vu5bUiWtK0b1Ij4Z44V2Vc=
+github.com/creachadair/taskgroup v0.4.1/go.mod h1:qiXUOSrbwAY3u0JPGTzObbE3yf9hcXHDKBZ2ZjpCbgM=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
