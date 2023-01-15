@@ -20,6 +20,7 @@ import (
 	"errors"
 	"net/url"
 	"path/filepath"
+	"strconv"
 
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/taskgroup"
@@ -28,9 +29,14 @@ import (
 
 // Opener constructs a filestore from an address comprising a URL, for use with
 // the store package. The host and path of the URL give the path of the
-// database directory. Optional query parameters include:
+// database directory.
 //
-//	read_only   : open the database in read-only mode
+// Optional query parameters include:
+//
+//	base_size        : base table size in MiB (default 2)
+//	compact_on_close : do a L0 compaction on close (default true)
+//	index_cache      : index cache size in MiB (default 50)
+//	read_only        : open the database in read-only mode (default false)
 func Opener(_ context.Context, addr string) (blob.Store, error) {
 	opts, err := parseOptions(addr)
 	if err != nil {
@@ -45,14 +51,38 @@ func parseOptions(addr string) (badger.Options, error) {
 		return badger.Options{}, err
 	}
 	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
-	_, ro := u.Query()["read_only"]
 	opts := badger.DefaultOptions(filePath).
-		WithNumVersionsToKeep(0).
-		WithCompactL0OnClose(true).
-		WithIndexCacheSize(100 << 20).
+		WithNumVersionsToKeep(1).
+		WithCompactL0OnClose(parseBool(u, "compact_on_close", true)).
+		WithBaseTableSize(parseInt(u, "base_size", 2) << 20).
+		WithIndexCacheSize(parseInt(u, "index_cache", 50) << 20).
 		WithLogger(nil).
-		WithReadOnly(ro)
+		WithReadOnly(parseBool(u, "read_only", false))
 	return opts, nil
+}
+
+func parseBool(u *url.URL, key string, dflt bool) bool {
+	v := u.Query().Get(key)
+	if v == "" {
+		return dflt
+	}
+	ok, err := strconv.ParseBool(v)
+	if err != nil {
+		return dflt
+	}
+	return ok
+}
+
+func parseInt(u *url.URL, key string, dflt int64) int64 {
+	v := u.Query().Get(key)
+	if v == "" {
+		return dflt
+	}
+	z, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return dflt
+	}
+	return z
 }
 
 // Store implements the blob.Store interface using a Badger key-value store.
