@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/creachadair/ffs v0.0.0-20230110190906-3b38d05a772e
+	github.com/creachadair/ffs v0.0.0-20230117050358-5dd9bc80b5ea
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -21,8 +21,8 @@ require (
 require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/creachadair/mds v0.0.0-20230110070022-49274a5afeea // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/creachadair/mds v0.0.0-20230115232940-050e69c560e9 // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
