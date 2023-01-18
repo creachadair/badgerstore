@@ -33,5 +33,3 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
-
-replace github.com/creachadair/taskgroup => ../taskgroup
