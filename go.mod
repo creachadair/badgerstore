@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/creachadair/taskgroup v0.4.2
+	github.com/creachadair/taskgroup v0.5.0
 	github.com/dgraph-io/badger/v3 v3.2103.5
 )
 
@@ -33,3 +33,5 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
+
+replace github.com/creachadair/taskgroup => ../taskgroup
