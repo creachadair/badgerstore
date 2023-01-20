@@ -34,7 +34,7 @@ func TestStore(t *testing.T) {
 		t.Fatalf("Creating store in %q: %v", dir, err)
 	}
 	storetest.Run(t, s)
-	if err := blob.CloseStore(context.Background(), s); err != nil {
+	if err := s.Close(context.Background()); err != nil {
 		t.Errorf("Closing store: %v", err)
 	}
 }
@@ -65,7 +65,7 @@ func TestListCancel(t *testing.T) {
 		t.Errorf("Wrong error: got %v, want %v", err, context.DeadlineExceeded)
 	}
 
-	if err := blob.CloseStore(context.Background(), s); err != nil {
+	if err := s.Close(context.Background()); err != nil {
 		t.Errorf("Closing store: %v", err)
 	}
 }

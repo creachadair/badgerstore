@@ -111,9 +111,9 @@ func NewPathReadOnly(path string) (*Store, error) {
 	return New(badger.DefaultOptions(path).WithLogger(nil).WithReadOnly(true))
 }
 
-// Close implements the io.Closer interface. It closes the underlying database
-// instance and reports its result.
-func (s *Store) Close() error { return s.db.Close() }
+// Close implements part of the blob.Store interface. It closes the underlying
+// database instance and reports its result.
+func (s *Store) Close(_ context.Context) error { return s.db.Close() }
 
 // Get implements part of blob.Store.
 func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
