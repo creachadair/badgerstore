@@ -1,6 +1,6 @@
 module github.com/creachadair/badgerstore
 
-go 1.18
+go 1.19
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
