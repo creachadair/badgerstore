@@ -124,7 +124,7 @@ func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
 		}
 		return err
 	})
-	if err == badger.ErrKeyNotFound {
+	if err == badger.ErrKeyNotFound || err == badger.ErrEmptyKey {
 		err = blob.KeyNotFound(key)
 	}
 	return
@@ -149,24 +149,6 @@ func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 			return err
 		}
 	}
-}
-
-// Size implements part of blob.Store.
-func (s *Store) Size(_ context.Context, key string) (size int64, err error) {
-	if key == "" {
-		return 0, blob.KeyNotFound(key) // badger cannot store empty keys
-	}
-	err = s.db.View(func(txn *badger.Txn) error {
-		itm, err := txn.Get([]byte(key))
-		if err == nil {
-			size = itm.ValueSize()
-		}
-		return err
-	})
-	if err == badger.ErrKeyNotFound {
-		err = blob.KeyNotFound(key)
-	}
-	return
 }
 
 // Delete implements part of blob.Store.

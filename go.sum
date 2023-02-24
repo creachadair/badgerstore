@@ -16,8 +16,8 @@ github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=
-github.com/creachadair/ffs v0.0.0-20230216224851-c8a1ccc9fd6d h1:SB86Tc4EiwJzBQOno2RgzOP4v8fY3a4LKgCBOdN0Odw=
-github.com/creachadair/ffs v0.0.0-20230216224851-c8a1ccc9fd6d/go.mod h1:+1p9xy8Tu/3qF9GRG27sdTby9nCQ7SkA7nLyp+XFlF8=
+github.com/creachadair/ffs v0.0.0-20230223181110-ea7f85e506d3 h1:lVAonn/9IcYEmCQFRANuFpPBWCCKvWKO97P83Z3p5rs=
+github.com/creachadair/ffs v0.0.0-20230223181110-ea7f85e506d3/go.mod h1:+1p9xy8Tu/3qF9GRG27sdTby9nCQ7SkA7nLyp+XFlF8=
 github.com/creachadair/mds v0.0.0-20230211201837-5ec6beec55ce h1:HSMtyHfGMXzX2PRaxCT8Ryb7KPewh5q2/FC24wM00A0=
 github.com/creachadair/mds v0.0.0-20230211201837-5ec6beec55ce/go.mod h1:caBACU+n1Q/rZ252FTzfnG0/H+ZUi+UnIQtEOraMv/g=
 github.com/creachadair/taskgroup v0.5.0 h1:44w3girt9OM0yPPoqGDO7u8+XEk6uG49PhnEn+8+nHY=
