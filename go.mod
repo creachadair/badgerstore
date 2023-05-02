@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8 // indirect
-	github.com/creachadair/ffs v0.0.0-20230422230946-ae5c147c555f
+	github.com/creachadair/ffs v0.0.1
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/golang/glog v1.1.1 // indirect
@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/creachadair/taskgroup v0.5.1
+	github.com/creachadair/taskgroup v0.6.0
 	github.com/dgraph-io/badger/v3 v3.2103.5
 )
 
