@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/taskgroup"
@@ -87,7 +88,9 @@ func parseInt(u *url.URL, key string, dflt int64) int64 {
 
 // Store implements the blob.Store interface using a Badger key-value store.
 type Store struct {
-	db *badger.DB
+	db     *badger.DB
+	stopGC context.CancelFunc
+	gc     *taskgroup.Single[error]
 }
 
 var errClosed = errors.New("database is closed")
@@ -98,7 +101,37 @@ func New(opts badger.Options) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{db: db}, nil
+	ctx, cancel := context.WithCancel(context.Background())
+	gc := taskgroup.Go(taskgroup.NoError(func() {
+		t := time.NewTicker(time.Minute)
+		defer t.Stop()
+
+		// Run the GC once at startup to prime the state.
+		var lastSize int64
+		var lastRun time.Time
+		rungc := func() {
+			if db.RunValueLogGC(0.7) == nil {
+				db.RunValueLogGC(0.7)
+			}
+			_, lastSize = db.Size()
+			lastRun = time.Now()
+		}
+
+		rungc()
+		for {
+			_, curSize := db.Size()
+			delta := max(curSize, lastSize) - min(curSize, lastSize)
+			if delta > 512<<20 || time.Since(lastRun) >= 10*time.Minute {
+				rungc()
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+			}
+		}
+	}))
+	return &Store{db: db, stopGC: cancel, gc: gc}, nil
 }
 
 // NewPath creates a Store by opening a Badger database with default options at
@@ -115,7 +148,13 @@ func NewPathReadOnly(path string) (*Store, error) {
 
 // Close implements part of the blob.Store interface. It closes the underlying
 // database instance and reports its result.
-func (s *Store) Close(_ context.Context) error { return s.db.Close() }
+func (s *Store) Close(_ context.Context) error {
+	if !s.db.IsClosed() {
+		s.stopGC()
+		s.gc.Wait()
+	}
+	return s.db.Close()
+}
 
 // Get implements part of blob.Store.
 func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
