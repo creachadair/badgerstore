@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
-	"sync/atomic"
 
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/taskgroup"
@@ -88,8 +87,7 @@ func parseInt(u *url.URL, key string, dflt int64) int64 {
 
 // Store implements the blob.Store interface using a Badger key-value store.
 type Store struct {
-	db     *badger.DB
-	closed atomic.Bool
+	db *badger.DB
 }
 
 var errClosed = errors.New("database is closed")
@@ -117,16 +115,11 @@ func NewPathReadOnly(path string) (*Store, error) {
 
 // Close implements part of the blob.Store interface. It closes the underlying
 // database instance and reports its result.
-func (s *Store) Close(_ context.Context) error {
-	if s.closed.CompareAndSwap(false, true) {
-		return s.db.Close()
-	}
-	return nil // fine, it's already closed
-}
+func (s *Store) Close(_ context.Context) error { return s.db.Close() }
 
 // Get implements part of blob.Store.
 func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
-	if s.closed.Load() {
+	if s.db.IsClosed() {
 		return nil, errClosed
 	}
 	err = s.db.View(func(txn *badger.Txn) error {
@@ -144,7 +137,7 @@ func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
 
 // Put implements part of blob.Store.
 func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
-	if s.closed.Load() {
+	if s.db.IsClosed() {
 		return errClosed
 	}
 	key := []byte(opts.Key)
@@ -168,7 +161,7 @@ func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 
 // Delete implements part of blob.Store.
 func (s *Store) Delete(_ context.Context, key string) error {
-	if s.closed.Load() {
+	if s.db.IsClosed() {
 		return errClosed
 	} else if key == "" {
 		return blob.KeyNotFound(key) // badger cannot store empty keys
@@ -192,7 +185,7 @@ func (s *Store) Delete(_ context.Context, key string) error {
 
 // List implements part of blob.Store.
 func (s *Store) List(ctx context.Context, start string, f func(string) error) error {
-	if s.closed.Load() {
+	if s.db.IsClosed() {
 		return errClosed
 	}
 	return s.db.View(func(txn *badger.Txn) error {
@@ -217,7 +210,7 @@ func (s *Store) List(ctx context.Context, start string, f func(string) error) er
 
 // Len implements part of blob.Store.
 func (s *Store) Len(ctx context.Context) (int64, error) {
-	if s.closed.Load() {
+	if s.db.IsClosed() {
 		return 0, errClosed
 	}
 	ctx, cancel := context.WithCancel(ctx)
