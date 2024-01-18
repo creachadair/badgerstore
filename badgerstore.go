@@ -25,7 +25,7 @@ import (
 
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/taskgroup"
-	badger "github.com/dgraph-io/badger/v3"
+	badger "github.com/dgraph-io/badger/v4"
 )
 
 // Opener constructs a filestore from an address comprising a URL, for use with

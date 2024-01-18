@@ -5,7 +5,6 @@ go 1.21
 toolchain go1.21.0
 
 require (
-	github.com/OneOfOne/xxhash v1.2.8 // indirect
 	github.com/creachadair/ffs v0.1.1
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
@@ -17,11 +16,10 @@ require (
 
 require (
 	github.com/creachadair/taskgroup v0.6.2
-	github.com/dgraph-io/badger/v3 v3.2103.5
+	github.com/dgraph-io/badger/v4 v4.2.0
 )
 
 require (
-	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/creachadair/mds v0.7.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
