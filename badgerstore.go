@@ -110,8 +110,8 @@ func New(opts badger.Options) (*Store, error) {
 		var lastSize int64
 		var lastRun time.Time
 		rungc := func() {
-			if db.RunValueLogGC(0.7) == nil {
-				db.RunValueLogGC(0.7)
+			if db.RunValueLogGC(0.5) == nil {
+				db.RunValueLogGC(0.5)
 			}
 			_, lastSize = db.Size()
 			lastRun = time.Now()
