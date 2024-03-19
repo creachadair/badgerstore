@@ -15,7 +15,7 @@ require (
 )
 
 require (
-	github.com/creachadair/taskgroup v0.8.0
+	github.com/creachadair/taskgroup v0.8.1
 	github.com/dgraph-io/badger/v4 v4.2.0
 )
 
