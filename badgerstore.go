@@ -59,13 +59,14 @@ func parseOptions(addr string) (Options, error) {
 		return Options{}, err
 	}
 	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
+	readOnly := parseBool(u, "read_only", false)
 	badgerOpts := badger.DefaultOptions(filePath).
 		WithNumVersionsToKeep(1).
-		WithCompactL0OnClose(parseBool(u, "compact_on_close", true)).
+		WithCompactL0OnClose(parseBool(u, "compact_on_close", !readOnly)).
 		WithBaseTableSize(parseInt(u, "base_size", 2) << 20).
 		WithIndexCacheSize(parseInt(u, "index_cache", 50) << 20).
 		WithLogger(nil).
-		WithReadOnly(parseBool(u, "read_only", false))
+		WithReadOnly(readOnly)
 	return Options{
 		Badger:   badgerOpts,
 		AutoSync: parseBool(u, "auto_sync", false),
