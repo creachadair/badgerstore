@@ -29,7 +29,7 @@ func TestStore(t *testing.T) {
 	dir := t.TempDir()
 
 	t.Logf("Test store: %s", dir)
-	s, err := badgerstore.Opener(context.Background(), dir)
+	s, err := badgerstore.Opener(context.Background(), dir+"?auto_sync=1")
 	if err != nil {
 		t.Fatalf("Creating store in %q: %v", dir, err)
 	}

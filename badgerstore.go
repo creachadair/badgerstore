@@ -34,10 +34,11 @@ import (
 //
 // Optional query parameters include:
 //
-//	base_size        : base table size in MiB (default 2)
+//	base_size=n      : base table size in MiB (default 2)
 //	compact_on_close : do a L0 compaction on close (default true)
-//	index_cache      : index cache size in MiB (default 50)
+//	index_cache=m    : index cache size in MiB (default 50)
 //	read_only        : open the database in read-only mode (default false)
+//	auto_sync        : automatically sync writes when GCing (default false)
 func Opener(_ context.Context, addr string) (blob.Store, error) {
 	opts, err := parseOptions(addr)
 	if err != nil {
@@ -46,20 +47,29 @@ func Opener(_ context.Context, addr string) (blob.Store, error) {
 	return New(opts)
 }
 
-func parseOptions(addr string) (badger.Options, error) {
+// Options are optional settings for a Store.
+type Options struct {
+	Badger   badger.Options // native options for BadgerDB
+	AutoSync bool           // enable auto-sync when GCing
+}
+
+func parseOptions(addr string) (Options, error) {
 	u, err := url.Parse(addr)
 	if err != nil {
-		return badger.Options{}, err
+		return Options{}, err
 	}
 	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
-	opts := badger.DefaultOptions(filePath).
+	badgerOpts := badger.DefaultOptions(filePath).
 		WithNumVersionsToKeep(1).
 		WithCompactL0OnClose(parseBool(u, "compact_on_close", true)).
 		WithBaseTableSize(parseInt(u, "base_size", 2) << 20).
 		WithIndexCacheSize(parseInt(u, "index_cache", 50) << 20).
 		WithLogger(nil).
 		WithReadOnly(parseBool(u, "read_only", false))
-	return opts, nil
+	return Options{
+		Badger:   badgerOpts,
+		AutoSync: parseBool(u, "auto_sync", false),
+	}, nil
 }
 
 func parseBool(u *url.URL, key string, dflt bool) bool {
@@ -96,8 +106,8 @@ type Store struct {
 var errClosed = errors.New("database is closed")
 
 // New creates a Store by opening the Badger database specified by opts.
-func New(opts badger.Options) (*Store, error) {
-	db, err := badger.Open(opts)
+func New(opts Options) (*Store, error) {
+	db, err := badger.Open(opts.Badger)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +134,9 @@ func New(opts badger.Options) (*Store, error) {
 			if delta > 512<<20 || time.Since(lastRun) >= 10*time.Minute {
 				rungc()
 			}
+			if opts.AutoSync {
+				db.Sync()
+			}
 			select {
 			case <-ctx.Done():
 				return
@@ -132,18 +145,6 @@ func New(opts badger.Options) (*Store, error) {
 		}
 	}))
 	return &Store{db: db, stopGC: cancel, gc: gc}, nil
-}
-
-// NewPath creates a Store by opening a Badger database with default options at
-// the specified path.
-func NewPath(path string) (*Store, error) {
-	return New(badger.DefaultOptions(path).WithLogger(nil))
-}
-
-// NewPathReadOnly creates a Store around a read-only Badger instance with
-// default options at the specified path.
-func NewPathReadOnly(path string) (*Store, error) {
-	return New(badger.DefaultOptions(path).WithLogger(nil).WithReadOnly(true))
 }
 
 // Close implements part of the blob.Store interface. It closes the underlying
