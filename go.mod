@@ -3,13 +3,13 @@ module github.com/creachadair/badgerstore
 go 1.22
 
 require (
-	github.com/creachadair/ffs v0.4.2
+	github.com/creachadair/ffs v0.4.3
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/golang/glog v1.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 )
 
 require (
