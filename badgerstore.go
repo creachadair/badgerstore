@@ -202,15 +202,14 @@ func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 		var add bool
 		err := s.db.Update(func(txn *badger.Txn) error {
 			_, gerr := txn.Get(key)
-			exist := gerr == nil
+			add = gerr != nil // probably
 			if !opts.Replace {
-				if exist {
+				if gerr == nil {
 					return blob.KeyExists(opts.Key)
 				} else if gerr != badger.ErrKeyNotFound {
 					return gerr
 				}
 			}
-			add = !exist
 			return txn.Set(key, opts.Data)
 		})
 		if err == nil {
