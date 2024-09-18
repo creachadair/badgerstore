@@ -5,6 +5,8 @@ github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UF
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
+github.com/creachadair/atomicfile v0.3.5 h1:i93bxeaH/rQR6XfJslola3XkOM1nEP3eIexuk9SWcSc=
+github.com/creachadair/atomicfile v0.3.5/go.mod h1:m7kIY2OUMygtETnMYe141rubsG4b+EusFLinlxxdHYM=
 github.com/creachadair/ffs v0.6.3 h1:bzShONpgy1do12EAweTEHOP0wM9l0kg5YuCnjrnVU/A=
 github.com/creachadair/ffs v0.6.3/go.mod h1:7JUhyc/goLyc6bEWMC7FgrH8daMLf7UQKBctll51tz0=
 github.com/creachadair/mds v0.20.0 h1:bXQO154c2TDgCY+rRmdIfUqjeqGYejmZ/QayeTNwbp8=

@@ -17,6 +17,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/creachadair/atomicfile v0.3.5 // indirect
 	github.com/creachadair/mds v0.20.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
