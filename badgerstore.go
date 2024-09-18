@@ -155,11 +155,12 @@ func New(opts Options) (*Store, error) {
 	}))
 	sizeFile := filepath.Join(opts.Badger.Dir, "__dbsize.bin")
 	return &Store{
-		db:       db,
+		db:     db,
+		stopGC: cancel,
+		gc:     gc,
+
 		size:     loadSize(sizeFile),
 		sizeFile: sizeFile,
-		stopGC:   cancel,
-		gc:       gc,
 	}, nil
 }
 
