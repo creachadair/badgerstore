@@ -17,12 +17,16 @@ package badgerstore
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
+	"github.com/creachadair/atomicfile"
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/taskgroup"
 	badger "github.com/dgraph-io/badger/v4"
@@ -102,6 +106,10 @@ type Store struct {
 	db     *badger.DB
 	stopGC context.CancelFunc
 	gc     *taskgroup.Single[error]
+
+	μ        sync.Mutex
+	size     int64  // number of keys (-1 means unknown)
+	sizeFile string // file path (in database directory)
 }
 
 var errClosed = errors.New("database is closed")
@@ -145,7 +153,15 @@ func New(opts Options) (*Store, error) {
 			}
 		}
 	}))
-	return &Store{db: db, stopGC: cancel, gc: gc}, nil
+	sizeFile := filepath.Join(opts.Badger.Dir, "__dbsize.bin")
+	return &Store{
+		db:     db,
+		stopGC: cancel,
+		gc:     gc,
+
+		size:     loadSize(sizeFile),
+		sizeFile: sizeFile,
+	}, nil
 }
 
 // Close implements part of the blob.Store interface. It closes the underlying
@@ -183,17 +199,25 @@ func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 	}
 	key := []byte(opts.Key)
 	for {
+		var add bool
 		err := s.db.Update(func(txn *badger.Txn) error {
+			_, gerr := txn.Get(key)
+			add = gerr != nil // probably
 			if !opts.Replace {
-				_, err := txn.Get(key)
-				if err == nil {
+				if gerr == nil {
 					return blob.KeyExists(opts.Key)
-				} else if err != badger.ErrKeyNotFound {
-					return err
+				} else if gerr != badger.ErrKeyNotFound {
+					return gerr
 				}
 			}
 			return txn.Set(key, opts.Data)
 		})
+		if err == nil {
+			if add {
+				s.addSize(1)
+			}
+			return nil
+		}
 		if !errors.Is(err, badger.ErrConflict) {
 			return err
 		}
@@ -218,7 +242,10 @@ func (s *Store) Delete(_ context.Context, key string) error {
 			}
 			return err
 		})
-		if !errors.Is(err, badger.ErrConflict) {
+		if err == nil {
+			s.addSize(-1)
+			return nil
+		} else if !errors.Is(err, badger.ErrConflict) {
 			return err
 		}
 	}
@@ -254,16 +281,27 @@ func (s *Store) Len(ctx context.Context) (int64, error) {
 	if s.db.IsClosed() {
 		return 0, errClosed
 	}
+
+	s.μ.Lock()
+	defer s.μ.Unlock()
+	if s.size >= 0 {
+		return s.size, nil
+	}
+
+	// Reaching here, we don't know the size.
+	// Compute and store it.
+	var size int64
+	c := taskgroup.Collect(func(v int64) { size += v })
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	g := taskgroup.New(taskgroup.Trigger(cancel))
 
-	sizes := make([]int64, 256)
-	for i := 0; i < 256; i++ {
-		pfx, i := []byte{byte(i)}, i
-
-		g.Go(func() error {
-			return s.db.View(func(txn *badger.Txn) error {
+	for i := range 256 {
+		pfx := []byte{byte(i)}
+		g.Go(c.Call(func() (int64, error) {
+			var size int64
+			err := s.db.View(func(txn *badger.Txn) error {
 				it := txn.NewIterator(badger.IteratorOptions{
 					Prefix: pfx,
 				})
@@ -274,19 +312,42 @@ func (s *Store) Len(ctx context.Context) (int64, error) {
 					case <-ctx.Done():
 						return ctx.Err()
 					default:
-						sizes[i]++
+						size++
 					}
 				}
 				return nil
 			})
-		})
+			return size, err
+		}))
 	}
 	if err := g.Wait(); err != nil {
 		return 0, err
 	}
-	var total int64
-	for _, size := range sizes {
-		total += size
+	s.size = size
+	saveSize(s.sizeFile, size)
+	return s.size, nil
+}
+
+func (s *Store) addSize(v int64) {
+	s.μ.Lock()
+	defer s.μ.Unlock()
+
+	s.size += v
+	saveSize(s.sizeFile, s.size)
+}
+
+func loadSize(path string) int64 {
+	sz, err := os.ReadFile(path)
+	if err != nil {
+		return -1
+	} else if len(sz) != 8 {
+		return -1
 	}
-	return total, nil
+	return int64(binary.BigEndian.Uint64(sz))
+}
+
+func saveSize(path string, size int64) {
+	var buf [8]byte
+	binary.BigEndian.PutUint64(buf[:], uint64(size))
+	atomicfile.WriteData(path, buf[:], 0644)
 }
