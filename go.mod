@@ -5,8 +5,8 @@ go 1.23
 toolchain go1.23.1
 
 require (
-	github.com/creachadair/ffs v0.6.4
-	github.com/dgraph-io/ristretto v0.1.2-0.20240116140435-c67e07994f91 // indirect
+	github.com/creachadair/ffs v0.6.5
+	github.com/dgraph-io/ristretto v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
@@ -26,7 +26,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/flatbuffers/go v0.0.0-20230110200425-62e4d2e5b215 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.10 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
