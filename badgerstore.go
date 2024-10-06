@@ -290,16 +290,15 @@ func (s *Store) Len(ctx context.Context) (int64, error) {
 
 	// Reaching here, we don't know the size.
 	// Compute and store it.
-	var size int64
-	c := taskgroup.Collect(func(v int64) { size += v })
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	g := taskgroup.New(taskgroup.Trigger(cancel))
+	g := taskgroup.New(cancel)
+	var size int64
+	c := taskgroup.Gather(g.Go, func(v int64) { size += v })
 
 	for i := range 256 {
 		pfx := []byte{byte(i)}
-		g.Go(c.Call(func() (int64, error) {
+		c.Call(func() (int64, error) {
 			var size int64
 			err := s.db.View(func(txn *badger.Txn) error {
 				it := txn.NewIterator(badger.IteratorOptions{
@@ -318,7 +317,7 @@ func (s *Store) Len(ctx context.Context) (int64, error) {
 				return nil
 			})
 			return size, err
-		}))
+		})
 	}
 	if err := g.Wait(); err != nil {
 		return 0, err
