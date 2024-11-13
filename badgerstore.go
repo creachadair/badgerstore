@@ -121,7 +121,7 @@ func New(opts Options) (*Store, error) {
 		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	gc := taskgroup.Go(taskgroup.NoError(func() {
+	gc := taskgroup.Run(func() {
 		t := time.NewTicker(time.Minute)
 		defer t.Stop()
 
@@ -152,7 +152,7 @@ func New(opts Options) (*Store, error) {
 			case <-t.C:
 			}
 		}
-	}))
+	})
 	sizeFile := filepath.Join(opts.Badger.Dir, "__dbsize.bin")
 	return &Store{
 		db:     db,
