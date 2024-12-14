@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package badgerstore implements the blob.Store interface using Badger.
+// Package badgerstore implements the [blob.KV] interface using BadgerDB.
 package badgerstore
 
 import (
@@ -43,7 +43,7 @@ import (
 //	index_cache=m    : index cache size in MiB (default 50)
 //	read_only        : open the database in read-only mode (default false)
 //	auto_sync        : automatically sync writes when GCing (default false)
-func Opener(_ context.Context, addr string) (blob.Store, error) {
+func Opener(_ context.Context, addr string) (blob.KV, error) {
 	opts, err := parseOptions(addr)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func Opener(_ context.Context, addr string) (blob.Store, error) {
 	return New(opts)
 }
 
-// Options are optional settings for a Store.
+// Options are optional settings for a [KV].
 type Options struct {
 	Badger   badger.Options // native options for BadgerDB
 	AutoSync bool           // enable auto-sync when GCing
@@ -101,8 +101,8 @@ func parseInt(u *url.URL, key string, dflt int64) int64 {
 	return z
 }
 
-// Store implements the blob.Store interface using a Badger key-value store.
-type Store struct {
+// KV implements the [blob.KV] interface using a Badger key-value store.
+type KV struct {
 	db     *badger.DB
 	stopGC context.CancelFunc
 	gc     *taskgroup.Single[error]
@@ -114,8 +114,8 @@ type Store struct {
 
 var errClosed = errors.New("database is closed")
 
-// New creates a Store by opening the Badger database specified by opts.
-func New(opts Options) (*Store, error) {
+// New creates a [KV] by opening the Badger database specified by opts.
+func New(opts Options) (*KV, error) {
 	db, err := badger.Open(opts.Badger)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func New(opts Options) (*Store, error) {
 		}
 	})
 	sizeFile := filepath.Join(opts.Badger.Dir, "__dbsize.bin")
-	return &Store{
+	return &KV{
 		db:     db,
 		stopGC: cancel,
 		gc:     gc,
@@ -164,9 +164,9 @@ func New(opts Options) (*Store, error) {
 	}, nil
 }
 
-// Close implements part of the blob.Store interface. It closes the underlying
+// Close implements part of the [blob.KV] interface. It closes the underlying
 // database instance and reports its result.
-func (s *Store) Close(_ context.Context) error {
+func (s *KV) Close(_ context.Context) error {
 	if !s.db.IsClosed() {
 		s.stopGC()
 		s.gc.Wait()
@@ -174,8 +174,8 @@ func (s *Store) Close(_ context.Context) error {
 	return s.db.Close()
 }
 
-// Get implements part of blob.Store.
-func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
+// Get implements part of [blob.KV].
+func (s *KV) Get(_ context.Context, key string) (data []byte, err error) {
 	if s.db.IsClosed() {
 		return nil, errClosed
 	}
@@ -192,8 +192,8 @@ func (s *Store) Get(_ context.Context, key string) (data []byte, err error) {
 	return
 }
 
-// Put implements part of blob.Store.
-func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
+// Put implements part of [blob.KV].
+func (s *KV) Put(_ context.Context, opts blob.PutOptions) error {
 	if s.db.IsClosed() {
 		return errClosed
 	}
@@ -224,8 +224,8 @@ func (s *Store) Put(_ context.Context, opts blob.PutOptions) error {
 	}
 }
 
-// Delete implements part of blob.Store.
-func (s *Store) Delete(_ context.Context, key string) error {
+// Delete implements part of [blob.KV].
+func (s *KV) Delete(_ context.Context, key string) error {
 	if s.db.IsClosed() {
 		return errClosed
 	} else if key == "" {
@@ -251,8 +251,8 @@ func (s *Store) Delete(_ context.Context, key string) error {
 	}
 }
 
-// List implements part of blob.Store.
-func (s *Store) List(ctx context.Context, start string, f func(string) error) error {
+// List implements part of [blob.KV].
+func (s *KV) List(ctx context.Context, start string, f func(string) error) error {
 	if s.db.IsClosed() {
 		return errClosed
 	}
@@ -276,8 +276,8 @@ func (s *Store) List(ctx context.Context, start string, f func(string) error) er
 	})
 }
 
-// Len implements part of blob.Store.
-func (s *Store) Len(ctx context.Context) (int64, error) {
+// Len implements part of [blob.KV].
+func (s *KV) Len(ctx context.Context) (int64, error) {
 	if s.db.IsClosed() {
 		return 0, errClosed
 	}
@@ -327,7 +327,7 @@ func (s *Store) Len(ctx context.Context) (int64, error) {
 	return s.size, nil
 }
 
-func (s *Store) addSize(v int64) {
+func (s *KV) addSize(v int64) {
 	s.μ.Lock()
 	defer s.μ.Unlock()
 
