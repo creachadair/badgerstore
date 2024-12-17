@@ -11,7 +11,6 @@ require (
 )
 
 require (
-	github.com/creachadair/atomicfile v0.3.6
 	github.com/creachadair/taskgroup v0.13.2
 	github.com/dgraph-io/badger/v4 v4.5.0
 )

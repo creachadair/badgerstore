@@ -49,8 +49,9 @@ func Opener(_ context.Context, addr string) (blob.KV, error) {
 
 // Options are optional settings for a [KV].
 type Options struct {
-	Badger   badger.Options // native options for BadgerDB
-	AutoSync bool           // enable auto-sync when GCing
+	Badger    badger.Options // native options for BadgerDB
+	AutoSync  bool           // enable auto-sync when GCing
+	KeyPrefix string         // to partition the namespace
 }
 
 func parseOptions(addr string) (Options, error) {
@@ -97,20 +98,34 @@ func parseInt(u *url.URL, key string, dflt int64) int64 {
 	return z
 }
 
-// KV implements the [blob.KV] interface using a Badger key-value store.
-type KV struct {
-	db     *badger.DB
+type dbMonitor struct {
+	DB     *badger.DB
 	stopGC context.CancelFunc
 	gc     *taskgroup.Single[error]
+}
+
+func (m *dbMonitor) isClosed() bool { return m.DB.IsClosed() }
+
+func (m *dbMonitor) stopAndWait() { m.stopGC(); m.gc.Wait() }
+
+func (m *dbMonitor) closeDB() error { return m.DB.Close() }
+
+// KV implements the [blob.KV] interface using a Badger key-value store.
+type KV struct {
+	mon *dbMonitor
+
+	// The prefix of the key space belonging to this KV.  If empty, this refers
+	// to the whole database.
+	prefix string
 }
 
 var errClosed = errors.New("database is closed")
 
 // New creates a [KV] by opening the Badger database specified by opts.
-func New(opts Options) (*KV, error) {
+func New(opts Options) (KV, error) {
 	db, err := badger.Open(opts.Badger)
 	if err != nil {
-		return nil, err
+		return KV{}, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	gc := taskgroup.Run(func() {
@@ -145,30 +160,31 @@ func New(opts Options) (*KV, error) {
 			}
 		}
 	})
-	return &KV{
-		db:     db,
+	mon := &dbMonitor{
+		DB:     db,
 		stopGC: cancel,
 		gc:     gc,
-	}, nil
+	}
+	return KV{mon: mon, prefix: opts.KeyPrefix}, nil
 }
 
 // Close implements part of the [blob.KV] interface. It closes the underlying
 // database instance and reports its result.
-func (s *KV) Close(_ context.Context) error {
-	if !s.db.IsClosed() {
-		s.stopGC()
-		s.gc.Wait()
+func (s KV) Close(_ context.Context) error {
+	if !s.mon.isClosed() {
+		s.mon.stopAndWait()
 	}
-	return s.db.Close()
+	return s.mon.closeDB()
 }
 
 // Get implements part of [blob.KV].
-func (s *KV) Get(_ context.Context, key string) (data []byte, err error) {
-	if s.db.IsClosed() {
+func (s KV) Get(_ context.Context, key string) (data []byte, err error) {
+	if s.mon.isClosed() {
 		return nil, errClosed
 	}
-	err = s.db.View(func(txn *badger.Txn) error {
-		itm, err := txn.Get([]byte(key))
+	realKey := s.prefix + key
+	err = s.mon.DB.View(func(txn *badger.Txn) error {
+		itm, err := txn.Get([]byte(realKey))
 		if err == nil {
 			data, err = itm.ValueCopy(data)
 		}
@@ -181,14 +197,14 @@ func (s *KV) Get(_ context.Context, key string) (data []byte, err error) {
 }
 
 // Put implements part of [blob.KV].
-func (s *KV) Put(_ context.Context, opts blob.PutOptions) error {
-	if s.db.IsClosed() {
+func (s KV) Put(_ context.Context, opts blob.PutOptions) error {
+	if s.mon.isClosed() {
 		return errClosed
 	}
-	key := []byte(opts.Key)
+	realKey := []byte(s.prefix + opts.Key)
 	for {
-		err := s.db.Update(func(txn *badger.Txn) error {
-			_, gerr := txn.Get(key)
+		err := s.mon.DB.Update(func(txn *badger.Txn) error {
+			_, gerr := txn.Get(realKey)
 			if !opts.Replace {
 				if gerr == nil {
 					return blob.KeyExists(opts.Key)
@@ -196,7 +212,7 @@ func (s *KV) Put(_ context.Context, opts blob.PutOptions) error {
 					return gerr
 				}
 			}
-			return txn.Set(key, opts.Data)
+			return txn.Set(realKey, opts.Data)
 		})
 		if !errors.Is(err, badger.ErrConflict) {
 			return err // including nil
@@ -205,18 +221,18 @@ func (s *KV) Put(_ context.Context, opts blob.PutOptions) error {
 }
 
 // Delete implements part of [blob.KV].
-func (s *KV) Delete(_ context.Context, key string) error {
-	if s.db.IsClosed() {
+func (s KV) Delete(_ context.Context, key string) error {
+	if s.mon.isClosed() {
 		return errClosed
 	} else if key == "" {
 		return blob.KeyNotFound(key) // badger cannot store empty keys
 	}
+	realKey := []byte(s.prefix + key)
 	for {
-		err := s.db.Update(func(txn *badger.Txn) error {
-			byteKey := []byte(key)
-			_, err := txn.Get(byteKey)
+		err := s.mon.DB.Update(func(txn *badger.Txn) error {
+			_, err := txn.Get(realKey)
 			if err == nil {
-				return txn.Delete(byteKey)
+				return txn.Delete(realKey)
 			} else if err == badger.ErrKeyNotFound {
 				return blob.KeyNotFound(key)
 			}
@@ -229,19 +245,26 @@ func (s *KV) Delete(_ context.Context, key string) error {
 }
 
 // List implements part of [blob.KV].
-func (s *KV) List(ctx context.Context, start string, f func(string) error) error {
-	if s.db.IsClosed() {
+func (s KV) List(ctx context.Context, start string, f func(string) error) error {
+	if s.mon.isClosed() {
 		return errClosed
 	}
-	return s.db.View(func(txn *badger.Txn) error {
-		// N.B. We don't use the default here, which prefetches the values.
-		it := txn.NewIterator(badger.IteratorOptions{})
+	fullPrefix := s.prefix + start
+	return s.mon.DB.View(func(txn *badger.Txn) error {
+		// N.B. The default prefetches values too.
+		it := txn.NewIterator(badger.IteratorOptions{
+			PrefetchValues: false, // faster, since we only want the keys
+
+			// Note we do not use fullPrefix here, because start is not itself a
+			// prefix but a point in the order.
+			Prefix: []byte(s.prefix),
+		})
 		defer it.Close()
 
-		for it.Seek([]byte(start)); it.Valid(); it.Next() {
-			key := it.Item().Key()
-			err := f(string(key))
-			if err == blob.ErrStopListing {
+		for it.Seek([]byte(fullPrefix)); it.Valid(); it.Next() {
+			fullKey := it.Item().Key()
+			key := string(fullKey[len(s.prefix):])
+			if err := f(key); errors.Is(err, blob.ErrStopListing) {
 				return nil
 			} else if err != nil {
 				return err
@@ -254,8 +277,8 @@ func (s *KV) List(ctx context.Context, start string, f func(string) error) error
 }
 
 // Len implements part of [blob.KV].
-func (s *KV) Len(ctx context.Context) (int64, error) {
-	if s.db.IsClosed() {
+func (s KV) Len(ctx context.Context) (int64, error) {
+	if s.mon.isClosed() {
 		return 0, errClosed
 	}
 
@@ -268,12 +291,12 @@ func (s *KV) Len(ctx context.Context) (int64, error) {
 	c := taskgroup.Gather(g.Go, func(v int64) { size += v })
 
 	for i := range 256 {
-		pfx := []byte{byte(i)}
+		pfx := s.prefix + string(byte(i))
 		c.Call(func() (int64, error) {
 			var size int64
-			err := s.db.View(func(txn *badger.Txn) error {
+			err := s.mon.DB.View(func(txn *badger.Txn) error {
 				it := txn.NewIterator(badger.IteratorOptions{
-					Prefix: pfx,
+					Prefix: []byte(pfx),
 				})
 				defer it.Close()
 
