@@ -44,7 +44,7 @@ func Opener(_ context.Context, addr string) (blob.KV, error) {
 	if err != nil {
 		return nil, err
 	}
-	return New(opts)
+	return NewKV(opts)
 }
 
 // Options are optional settings for a [KV].
@@ -121,8 +121,8 @@ type KV struct {
 
 var errClosed = errors.New("database is closed")
 
-// New creates a [KV] by opening the Badger database specified by opts.
-func New(opts Options) (KV, error) {
+// NewKV creates a [KV] by opening the Badger database specified by opts.
+func NewKV(opts Options) (KV, error) {
 	db, err := badger.Open(opts.Badger)
 	if err != nil {
 		return KV{}, err

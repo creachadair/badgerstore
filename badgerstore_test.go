@@ -46,7 +46,7 @@ func TestKeyPrefix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	kv, err := badgerstore.New(badgerstore.Options{
+	kv, err := badgerstore.NewKV(badgerstore.Options{
 		Badger:    badger.DefaultOptions(dir).WithLogger(nil),
 		KeyPrefix: ":wibble:",
 	})
