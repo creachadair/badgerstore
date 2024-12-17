@@ -17,16 +17,12 @@ package badgerstore
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"time"
 
-	"github.com/creachadair/atomicfile"
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/taskgroup"
 	badger "github.com/dgraph-io/badger/v4"
@@ -106,10 +102,6 @@ type KV struct {
 	db     *badger.DB
 	stopGC context.CancelFunc
 	gc     *taskgroup.Single[error]
-
-	μ        sync.Mutex
-	size     int64  // number of keys (-1 means unknown)
-	sizeFile string // file path (in database directory)
 }
 
 var errClosed = errors.New("database is closed")
@@ -153,14 +145,10 @@ func New(opts Options) (*KV, error) {
 			}
 		}
 	})
-	sizeFile := filepath.Join(opts.Badger.Dir, "__dbsize.bin")
 	return &KV{
 		db:     db,
 		stopGC: cancel,
 		gc:     gc,
-
-		size:     loadSize(sizeFile),
-		sizeFile: sizeFile,
 	}, nil
 }
 
@@ -199,10 +187,8 @@ func (s *KV) Put(_ context.Context, opts blob.PutOptions) error {
 	}
 	key := []byte(opts.Key)
 	for {
-		var add bool
 		err := s.db.Update(func(txn *badger.Txn) error {
 			_, gerr := txn.Get(key)
-			add = gerr != nil // probably
 			if !opts.Replace {
 				if gerr == nil {
 					return blob.KeyExists(opts.Key)
@@ -212,14 +198,8 @@ func (s *KV) Put(_ context.Context, opts blob.PutOptions) error {
 			}
 			return txn.Set(key, opts.Data)
 		})
-		if err == nil {
-			if add {
-				s.addSize(1)
-			}
-			return nil
-		}
 		if !errors.Is(err, badger.ErrConflict) {
-			return err
+			return err // including nil
 		}
 	}
 }
@@ -242,11 +222,8 @@ func (s *KV) Delete(_ context.Context, key string) error {
 			}
 			return err
 		})
-		if err == nil {
-			s.addSize(-1)
-			return nil
-		} else if !errors.Is(err, badger.ErrConflict) {
-			return err
+		if !errors.Is(err, badger.ErrConflict) {
+			return err // including nil
 		}
 	}
 }
@@ -280,12 +257,6 @@ func (s *KV) List(ctx context.Context, start string, f func(string) error) error
 func (s *KV) Len(ctx context.Context) (int64, error) {
 	if s.db.IsClosed() {
 		return 0, errClosed
-	}
-
-	s.μ.Lock()
-	defer s.μ.Unlock()
-	if s.size >= 0 {
-		return s.size, nil
 	}
 
 	// Reaching here, we don't know the size.
@@ -322,31 +293,5 @@ func (s *KV) Len(ctx context.Context) (int64, error) {
 	if err := g.Wait(); err != nil {
 		return 0, err
 	}
-	s.size = size
-	saveSize(s.sizeFile, size)
-	return s.size, nil
-}
-
-func (s *KV) addSize(v int64) {
-	s.μ.Lock()
-	defer s.μ.Unlock()
-
-	s.size += v
-	saveSize(s.sizeFile, s.size)
-}
-
-func loadSize(path string) int64 {
-	sz, err := os.ReadFile(path)
-	if err != nil {
-		return -1
-	} else if len(sz) != 8 {
-		return -1
-	}
-	return int64(binary.BigEndian.Uint64(sz))
-}
-
-func saveSize(path string, size int64) {
-	var buf [8]byte
-	binary.BigEndian.PutUint64(buf[:], uint64(size))
-	atomicfile.WriteData(path, buf[:], 0644)
+	return size, nil
 }
