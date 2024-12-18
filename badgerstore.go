@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package badgerstore implements the [blob.KV] interface using BadgerDB.
+// Package badgerstore implements the [blob.Store] interface using BadgerDB.
 package badgerstore
 
 import (
@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/creachadair/ffs/blob"
+	"github.com/creachadair/ffs/storage/dbkey"
 	"github.com/creachadair/taskgroup"
 	badger "github.com/dgraph-io/badger/v4"
 )
@@ -39,19 +40,26 @@ import (
 //	index_cache=m    : index cache size in MiB (default 50)
 //	read_only        : open the database in read-only mode (default false)
 //	auto_sync        : automatically sync writes when GCing (default false)
-func Opener(_ context.Context, addr string) (blob.KV, error) {
+func Opener(_ context.Context, addr string) (blob.StoreCloser, error) {
 	opts, err := parseOptions(addr)
 	if err != nil {
 		return nil, err
 	}
-	return NewKV(opts)
+	return New(opts)
 }
 
-// Options are optional settings for a [KV].
+// Options are optional settings for a [Store] or a [KV].
 type Options struct {
-	Badger    badger.Options // native options for BadgerDB
-	AutoSync  bool           // enable auto-sync when GCing
-	KeyPrefix string         // to partition the namespace
+	// Badger are the options to use for creating or opening a BadgerDB.
+	// At least the Dir field must be set.
+	Badger badger.Options
+
+	// AutoSync, if true, enables automatic periodic sync to disk.
+	AutoSync bool
+
+	// KeyPrefix, if non-empty, is automatically prepended to all keys, and
+	// scopes the resulting access to only keys having that prefix.
+	KeyPrefix string
 }
 
 func parseOptions(addr string) (Options, error) {
@@ -98,6 +106,10 @@ func parseInt(u *url.URL, key string, dflt int64) int64 {
 	return z
 }
 
+// dbMonitor is a shared wrapper around an underlying badger DB instance that
+// maintains the plumbing for automatic compactions and shutdown.  It is safe
+// for multiple goroutines to share a single *dbMonitor d, and to access the
+// methods of d.DB, without a lock.
 type dbMonitor struct {
 	DB     *badger.DB
 	stopGC context.CancelFunc
@@ -110,22 +122,65 @@ func (m *dbMonitor) stopAndWait() { m.stopGC(); m.gc.Wait() }
 
 func (m *dbMonitor) closeDB() error { return m.DB.Close() }
 
+// Store implements the [blob.Store] interface using a BadgerDB instance.
+type Store struct {
+	mon    *dbMonitor
+	prefix dbkey.Prefix
+}
+
+// New constructs a Store by opening or creating a BadgerDB instance with the
+// specified options.
+func New(opts Options) (Store, error) {
+	mon, err := newMonitor(opts)
+	if err != nil {
+		return Store{}, err
+	}
+	return Store{mon: mon, prefix: dbkey.Prefix(opts.KeyPrefix)}, nil
+}
+
+// Keyspace satisfies part of the [blob.Store] interface. The values returned
+// have concrete type [badgerstore.KV].
+func (s Store) Keyspace(_ context.Context, name string) (blob.KV, error) {
+	return KV{mon: s.mon, prefix: s.prefix.Keyspace(name)}, nil
+}
+
+// Sub satisfies part of the [blob.Store] interface.
+func (s Store) Sub(_ context.Context, name string) (blob.Store, error) {
+	return Store{mon: s.mon, prefix: s.prefix.Sub(name)}, nil
+}
+
+// Close satisfies part of the [blob.StoreCloser] interface.
+func (s Store) Close(_ context.Context) error {
+	if !s.mon.isClosed() {
+		s.mon.stopAndWait()
+	}
+	return s.mon.closeDB()
+}
+
 // KV implements the [blob.KV] interface using a Badger key-value store.
 type KV struct {
 	mon *dbMonitor
 
 	// The prefix of the key space belonging to this KV.  If empty, this refers
 	// to the whole database.
-	prefix string
+	prefix dbkey.Prefix
 }
 
 var errClosed = errors.New("database is closed")
 
 // NewKV creates a [KV] by opening the Badger database specified by opts.
 func NewKV(opts Options) (KV, error) {
-	db, err := badger.Open(opts.Badger)
+	mon, err := newMonitor(opts)
 	if err != nil {
 		return KV{}, err
+	}
+	return KV{mon: mon, prefix: dbkey.Prefix(opts.KeyPrefix)}, nil
+}
+
+func newMonitor(opts Options) (*dbMonitor, error) {
+	db, err := badger.Open(opts.Badger)
+	if err != nil {
+		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	gc := taskgroup.Run(func() {
@@ -160,12 +215,11 @@ func NewKV(opts Options) (KV, error) {
 			}
 		}
 	})
-	mon := &dbMonitor{
+	return &dbMonitor{
 		DB:     db,
 		stopGC: cancel,
 		gc:     gc,
-	}
-	return KV{mon: mon, prefix: opts.KeyPrefix}, nil
+	}, nil
 }
 
 // Close implements part of the [blob.KV] interface. It closes the underlying
@@ -182,7 +236,7 @@ func (s KV) Get(_ context.Context, key string) (data []byte, err error) {
 	if s.mon.isClosed() {
 		return nil, errClosed
 	}
-	realKey := s.prefix + key
+	realKey := s.prefix.Add(key)
 	err = s.mon.DB.View(func(txn *badger.Txn) error {
 		itm, err := txn.Get([]byte(realKey))
 		if err == nil {
@@ -201,7 +255,7 @@ func (s KV) Put(_ context.Context, opts blob.PutOptions) error {
 	if s.mon.isClosed() {
 		return errClosed
 	}
-	realKey := []byte(s.prefix + opts.Key)
+	realKey := []byte(s.prefix.Add(opts.Key))
 	for {
 		err := s.mon.DB.Update(func(txn *badger.Txn) error {
 			_, gerr := txn.Get(realKey)
@@ -227,7 +281,7 @@ func (s KV) Delete(_ context.Context, key string) error {
 	} else if key == "" {
 		return blob.KeyNotFound(key) // badger cannot store empty keys
 	}
-	realKey := []byte(s.prefix + key)
+	realKey := []byte(s.prefix.Add(key))
 	for {
 		err := s.mon.DB.Update(func(txn *badger.Txn) error {
 			_, err := txn.Get(realKey)
@@ -249,7 +303,7 @@ func (s KV) List(ctx context.Context, start string, f func(string) error) error 
 	if s.mon.isClosed() {
 		return errClosed
 	}
-	fullPrefix := s.prefix + start
+	fullPrefix := s.prefix.Add(start)
 	return s.mon.DB.View(func(txn *badger.Txn) error {
 		// N.B. The default prefetches values too.
 		it := txn.NewIterator(badger.IteratorOptions{
@@ -263,7 +317,7 @@ func (s KV) List(ctx context.Context, start string, f func(string) error) error 
 
 		for it.Seek([]byte(fullPrefix)); it.Valid(); it.Next() {
 			fullKey := it.Item().Key()
-			key := string(fullKey[len(s.prefix):])
+			key := s.prefix.Remove(string(fullKey))
 			if err := f(key); errors.Is(err, blob.ErrStopListing) {
 				return nil
 			} else if err != nil {
@@ -291,7 +345,7 @@ func (s KV) Len(ctx context.Context) (int64, error) {
 	c := taskgroup.Gather(g.Go, func(v int64) { size += v })
 
 	for i := range 256 {
-		pfx := s.prefix + string(byte(i))
+		pfx := s.prefix.Add(string(byte(i)))
 		c.Call(func() (int64, error) {
 			var size int64
 			err := s.mon.DB.View(func(txn *badger.Txn) error {
