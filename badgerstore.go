@@ -25,6 +25,7 @@ import (
 
 	"github.com/creachadair/ffs/blob"
 	"github.com/creachadair/ffs/storage/dbkey"
+	"github.com/creachadair/ffs/storage/monitor"
 	"github.com/creachadair/taskgroup"
 	badger "github.com/dgraph-io/badger/v4"
 )
@@ -106,60 +107,46 @@ func parseInt(u *url.URL, key string, dflt int64) int64 {
 	return z
 }
 
-// dbMonitor is a shared wrapper around an underlying badger DB instance that
-// maintains the plumbing for automatic compactions and shutdown.  It is safe
-// for multiple goroutines to share a single *dbMonitor d, and to access the
-// methods of d.DB, without a lock.
-type dbMonitor struct {
+type dbState struct {
 	DB     *badger.DB
 	stopGC context.CancelFunc
 	gc     *taskgroup.Single[error]
 }
 
-func (m *dbMonitor) isClosed() bool { return m.DB.IsClosed() }
+func (m *dbState) isClosed() bool { return m.DB.IsClosed() }
 
-func (m *dbMonitor) stopAndWait() { m.stopGC(); m.gc.Wait() }
+func (m *dbState) stopAndWait() { m.stopGC(); m.gc.Wait() }
 
-func (m *dbMonitor) closeDB() error { return m.DB.Close() }
+func (m *dbState) closeDB() error { return m.DB.Close() }
 
 // Store implements the [blob.Store] interface using a BadgerDB instance.
 type Store struct {
-	mon    *dbMonitor
-	prefix dbkey.Prefix
+	*monitor.M[*dbState, KV]
 }
 
 // New constructs a Store by opening or creating a BadgerDB instance with the
 // specified options.
 func New(opts Options) (Store, error) {
-	mon, err := newMonitor(opts)
+	st, err := newState(opts)
 	if err != nil {
 		return Store{}, err
 	}
-	return Store{mon: mon, prefix: dbkey.Prefix(opts.KeyPrefix)}, nil
-}
-
-// Keyspace satisfies part of the [blob.Store] interface. The values returned
-// have concrete type [badgerstore.KV].
-func (s Store) Keyspace(_ context.Context, name string) (blob.KV, error) {
-	return KV{mon: s.mon, prefix: s.prefix.Keyspace(name)}, nil
-}
-
-// Sub satisfies part of the [blob.Store] interface.
-func (s Store) Sub(_ context.Context, name string) (blob.Store, error) {
-	return Store{mon: s.mon, prefix: s.prefix.Sub(name)}, nil
+	return Store{M: monitor.New(st, dbkey.Prefix(opts.KeyPrefix), func(c monitor.Config[*dbState]) KV {
+		return KV{mon: c.DB, prefix: c.Prefix}
+	})}, nil
 }
 
 // Close satisfies part of the [blob.StoreCloser] interface.
 func (s Store) Close(_ context.Context) error {
-	if !s.mon.isClosed() {
-		s.mon.stopAndWait()
+	if !s.DB.isClosed() {
+		s.DB.stopAndWait()
 	}
-	return s.mon.closeDB()
+	return s.DB.closeDB()
 }
 
 // KV implements the [blob.KV] interface using a Badger key-value store.
 type KV struct {
-	mon *dbMonitor
+	mon *dbState
 
 	// The prefix of the key space belonging to this KV.  If empty, this refers
 	// to the whole database.
@@ -170,14 +157,14 @@ var errClosed = errors.New("database is closed")
 
 // NewKV creates a [KV] by opening the Badger database specified by opts.
 func NewKV(opts Options) (KV, error) {
-	mon, err := newMonitor(opts)
+	mon, err := newState(opts)
 	if err != nil {
 		return KV{}, err
 	}
 	return KV{mon: mon, prefix: dbkey.Prefix(opts.KeyPrefix)}, nil
 }
 
-func newMonitor(opts Options) (*dbMonitor, error) {
+func newState(opts Options) (*dbState, error) {
 	db, err := badger.Open(opts.Badger)
 	if err != nil {
 		return nil, err
@@ -215,7 +202,7 @@ func newMonitor(opts Options) (*dbMonitor, error) {
 			}
 		}
 	})
-	return &dbMonitor{
+	return &dbState{
 		DB:     db,
 		stopGC: cancel,
 		gc:     gc,
