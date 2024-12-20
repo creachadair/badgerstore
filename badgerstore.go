@@ -63,62 +63,6 @@ type Options struct {
 	KeyPrefix string
 }
 
-func parseOptions(addr string) (Options, error) {
-	u, err := url.Parse(addr)
-	if err != nil {
-		return Options{}, err
-	}
-	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
-	readOnly := parseBool(u, "read_only", false)
-	badgerOpts := badger.DefaultOptions(filePath).
-		WithNumVersionsToKeep(1).
-		WithCompactL0OnClose(parseBool(u, "compact_on_close", !readOnly)).
-		WithBaseTableSize(parseInt(u, "base_size", 2) << 20).
-		WithIndexCacheSize(parseInt(u, "index_cache", 50) << 20).
-		WithLogger(nil).
-		WithReadOnly(readOnly)
-	return Options{
-		Badger:   badgerOpts,
-		AutoSync: parseBool(u, "auto_sync", false),
-	}, nil
-}
-
-func parseBool(u *url.URL, key string, dflt bool) bool {
-	v := u.Query().Get(key)
-	if v == "" {
-		return dflt
-	}
-	ok, err := strconv.ParseBool(v)
-	if err != nil {
-		return dflt
-	}
-	return ok
-}
-
-func parseInt(u *url.URL, key string, dflt int64) int64 {
-	v := u.Query().Get(key)
-	if v == "" {
-		return dflt
-	}
-	z, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return dflt
-	}
-	return z
-}
-
-type dbState struct {
-	DB     *badger.DB
-	stopGC context.CancelFunc
-	gc     *taskgroup.Single[error]
-}
-
-func (m *dbState) isClosed() bool { return m.DB.IsClosed() }
-
-func (m *dbState) stopAndWait() { m.stopGC(); m.gc.Wait() }
-
-func (m *dbState) closeDB() error { return m.DB.Close() }
-
 // Store implements the [blob.Store] interface using a BadgerDB instance.
 type Store struct {
 	*monitor.M[*dbState, KV]
@@ -131,8 +75,12 @@ func New(opts Options) (Store, error) {
 	if err != nil {
 		return Store{}, err
 	}
-	return Store{M: monitor.New(st, dbkey.Prefix(opts.KeyPrefix), func(c monitor.Config[*dbState]) KV {
-		return KV{mon: c.DB, prefix: c.Prefix}
+	return Store{M: monitor.New(monitor.Config[*dbState, KV]{
+		DB:     st,
+		Prefix: dbkey.Prefix(opts.KeyPrefix),
+		NewKV: func(_ context.Context, db *dbState, pfx dbkey.Prefix, _ string) (KV, error) {
+			return KV{mon: db, prefix: pfx}, nil
+		},
 	})}, nil
 }
 
@@ -358,4 +306,60 @@ func (s KV) Len(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 	return size, nil
+}
+
+type dbState struct {
+	DB     *badger.DB
+	stopGC context.CancelFunc
+	gc     *taskgroup.Single[error]
+}
+
+func (m *dbState) isClosed() bool { return m.DB.IsClosed() }
+
+func (m *dbState) stopAndWait() { m.stopGC(); m.gc.Wait() }
+
+func (m *dbState) closeDB() error { return m.DB.Close() }
+
+func parseOptions(addr string) (Options, error) {
+	u, err := url.Parse(addr)
+	if err != nil {
+		return Options{}, err
+	}
+	filePath := filepath.Join(u.Host, filepath.FromSlash(u.Path))
+	readOnly := parseBool(u, "read_only", false)
+	badgerOpts := badger.DefaultOptions(filePath).
+		WithNumVersionsToKeep(1).
+		WithCompactL0OnClose(parseBool(u, "compact_on_close", !readOnly)).
+		WithBaseTableSize(parseInt(u, "base_size", 2) << 20).
+		WithIndexCacheSize(parseInt(u, "index_cache", 50) << 20).
+		WithLogger(nil).
+		WithReadOnly(readOnly)
+	return Options{
+		Badger:   badgerOpts,
+		AutoSync: parseBool(u, "auto_sync", false),
+	}, nil
+}
+
+func parseBool(u *url.URL, key string, dflt bool) bool {
+	v := u.Query().Get(key)
+	if v == "" {
+		return dflt
+	}
+	ok, err := strconv.ParseBool(v)
+	if err != nil {
+		return dflt
+	}
+	return ok
+}
+
+func parseInt(u *url.URL, key string, dflt int64) int64 {
+	v := u.Query().Get(key)
+	if v == "" {
+		return dflt
+	}
+	z, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return dflt
+	}
+	return z
 }

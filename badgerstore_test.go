@@ -74,7 +74,7 @@ func TestListCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Creating store in %q: %v", dir, err)
 	}
-	kv := storetest.SubKeyspace(t, ctx, s, "")
+	kv := storetest.SubKV(t, ctx, s, "")
 	if err := kv.Put(ctx, blob.PutOptions{
 		Key:  "test key 1",
 		Data: []byte("ok boomer"),
