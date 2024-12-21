@@ -3,7 +3,7 @@ module github.com/creachadair/badgerstore
 go 1.23
 
 require (
-	github.com/creachadair/ffs v0.8.0
+	github.com/creachadair/ffs v0.9.0
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 )
@@ -24,5 +24,6 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	google.golang.org/protobuf v1.36.0 // indirect
 )
