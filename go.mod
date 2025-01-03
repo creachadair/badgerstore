@@ -3,7 +3,7 @@ module github.com/creachadair/badgerstore
 go 1.23
 
 require (
-	github.com/creachadair/ffs v0.9.0
+	github.com/creachadair/ffs v0.9.7-0.20250103173928-8c8f75f454c2
 	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 )

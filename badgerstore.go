@@ -179,9 +179,28 @@ func (s KV) Get(_ context.Context, key string) (data []byte, err error) {
 		}
 		return err
 	})
-	if err == badger.ErrKeyNotFound || err == badger.ErrEmptyKey {
+	if errors.Is(err, badger.ErrKeyNotFound) || errors.Is(err, badger.ErrEmptyKey) {
 		err = blob.KeyNotFound(key)
 	}
+	return
+}
+
+// Stat implements part of [blob.KV].
+func (s KV) Stat(_ context.Context, keys ...string) (out blob.StatMap, err error) {
+	if s.mon.isClosed() {
+		return nil, errClosed
+	}
+	out = make(blob.StatMap)
+	err = s.mon.DB.View(func(txn *badger.Txn) error {
+		for _, key := range keys {
+			itm, err := txn.Get([]byte(s.prefix.Add(key)))
+			if err == nil {
+				out[key] = blob.Stat{Size: itm.ValueSize()}
+			}
+			// Treat any other error as missing.
+		}
+		return nil
+	})
 	return
 }
 
@@ -197,7 +216,7 @@ func (s KV) Put(_ context.Context, opts blob.PutOptions) error {
 			if !opts.Replace {
 				if gerr == nil {
 					return blob.KeyExists(opts.Key)
-				} else if gerr != badger.ErrKeyNotFound {
+				} else if !errors.Is(gerr, badger.ErrKeyNotFound) {
 					return gerr
 				}
 			}
@@ -222,7 +241,7 @@ func (s KV) Delete(_ context.Context, key string) error {
 			_, err := txn.Get(realKey)
 			if err == nil {
 				return txn.Delete(realKey)
-			} else if err == badger.ErrKeyNotFound {
+			} else if errors.Is(err, badger.ErrKeyNotFound) {
 				return blob.KeyNotFound(key)
 			}
 			return err
