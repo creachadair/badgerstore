@@ -185,23 +185,22 @@ func (s KV) Get(_ context.Context, key string) (data []byte, err error) {
 	return
 }
 
-// Stat implements part of [blob.KV].
-func (s KV) Stat(_ context.Context, keys ...string) (out blob.StatMap, err error) {
+// Has implements part of [blob.KV].
+func (s KV) Has(_ context.Context, keys ...string) (blob.KeySet, error) {
 	if s.mon.isClosed() {
 		return nil, errClosed
 	}
-	out = make(blob.StatMap)
-	err = s.mon.DB.View(func(txn *badger.Txn) error {
+	var out blob.KeySet
+	err := s.mon.DB.View(func(txn *badger.Txn) error {
 		for _, key := range keys {
-			itm, err := txn.Get([]byte(s.prefix.Add(key)))
-			if err == nil {
-				out[key] = blob.Stat{Size: itm.ValueSize()}
+			if _, err := txn.Get([]byte(s.prefix.Add(key))); err == nil {
+				out.Add(key)
 			}
 			// Treat any other error as missing.
 		}
 		return nil
 	})
-	return
+	return out, err
 }
 
 // Put implements part of [blob.KV].
