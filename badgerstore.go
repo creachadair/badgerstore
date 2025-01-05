@@ -18,6 +18,7 @@ package badgerstore
 import (
 	"context"
 	"errors"
+	"iter"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -252,35 +253,41 @@ func (s KV) Delete(_ context.Context, key string) error {
 }
 
 // List implements part of [blob.KV].
-func (s KV) List(ctx context.Context, start string, f func(string) error) error {
-	if s.mon.isClosed() {
-		return errClosed
-	}
-	fullPrefix := s.prefix.Add(start)
-	return s.mon.DB.View(func(txn *badger.Txn) error {
-		// N.B. The default prefetches values too.
-		it := txn.NewIterator(badger.IteratorOptions{
-			PrefetchValues: false, // faster, since we only want the keys
-
-			// Note we do not use fullPrefix here, because start is not itself a
-			// prefix but a point in the order.
-			Prefix: []byte(s.prefix),
-		})
-		defer it.Close()
-
-		for it.Seek([]byte(fullPrefix)); it.Valid(); it.Next() {
-			fullKey := it.Item().Key()
-			key := s.prefix.Remove(string(fullKey))
-			if err := f(key); errors.Is(err, blob.ErrStopListing) {
-				return nil
-			} else if err != nil {
-				return err
-			} else if err := ctx.Err(); err != nil {
-				return err
-			}
+func (s KV) List(ctx context.Context, start string) iter.Seq2[string, error] {
+	return func(yield func(string, error) bool) {
+		if s.mon.isClosed() {
+			yield("", errClosed)
+			return
 		}
-		return nil
-	})
+		fullPrefix := s.prefix.Add(start)
+
+		if err := s.mon.DB.View(func(txn *badger.Txn) error {
+			// N.B. The default prefetches values, which we don't bother with here
+			// because we only need the keys.
+			it := txn.NewIterator(badger.IteratorOptions{
+				PrefetchValues: false,
+
+				// Note we do not use fullPrefix here, because start is not itself a
+				// prefix but a point in the order.
+				Prefix: []byte(s.prefix),
+			})
+			defer it.Close()
+
+			for it.Seek([]byte(fullPrefix)); it.Valid(); it.Next() {
+				if ctx.Err() != nil {
+					break
+				}
+				fullKey := it.Item().Key()
+				key := s.prefix.Remove(string(fullKey))
+				if !yield(key, nil) {
+					break
+				}
+			}
+			return ctx.Err()
+		}); err != nil {
+			yield("", err)
+		}
+	}
 }
 
 // Len implements part of [blob.KV].

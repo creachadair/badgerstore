@@ -74,7 +74,7 @@ func TestListCancel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Creating store in %q: %v", dir, err)
 	}
-	kv := storetest.SubKV(t, ctx, s, "")
+	kv := storetest.SubKV(t, ctx, s, "vorpal steed")
 	if err := kv.Put(ctx, blob.PutOptions{
 		Key:  "test key 1",
 		Data: []byte("ok boomer"),
@@ -82,13 +82,25 @@ func TestListCancel(t *testing.T) {
 		t.Fatalf("Put failed: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	ctx, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
 	defer cancel()
-	err = kv.List(ctx, "", func(string) error {
-		time.Sleep(1 * time.Second)
-		return nil
+
+	// Wake up the iterator for a value "too late", and verify that it reports
+	// the error from the context.
+	it := kv.List(ctx, "")
+	time.Sleep(500 * time.Millisecond)
+
+	var key string
+	var listErr error
+	it(func(k string, err error) bool {
+		key = k
+		listErr = err
+		return false
 	})
-	if !errors.Is(err, context.DeadlineExceeded) {
+	if key != "" {
+		t.Errorf(`Wrong key: got %q, want ""`, key)
+	}
+	if !errors.Is(listErr, context.DeadlineExceeded) {
 		t.Errorf("Wrong error: got %v, want %v", err, context.DeadlineExceeded)
 	}
 	if err := kv.(badgerstore.KV).Close(context.Background()); err != nil {
