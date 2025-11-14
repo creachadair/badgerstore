@@ -127,8 +127,8 @@ func newState(opts Options) (*dbState, error) {
 		var lastSize int64
 		var lastRun time.Time
 		rungc := func() {
-			if db.RunValueLogGC(0.5) == nil {
-				db.RunValueLogGC(0.5)
+			if db.RunValueLogGC(0.6) == nil {
+				db.RunValueLogGC(0.6)
 			}
 			_, lastSize = db.Size()
 			lastRun = time.Now()
