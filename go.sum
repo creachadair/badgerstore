@@ -4,8 +4,8 @@ github.com/creachadair/ffs v0.17.9 h1:Gzodagx91zirfLfAaLnA/T7voY6dQ5U/4/TjSmoFkb
 github.com/creachadair/ffs v0.17.9/go.mod h1:f3Cq1DdFIQMPanN1Xl4APxTmxmyQS0uEVGQc90B7hro=
 github.com/creachadair/mds v0.27.1 h1:GlO1tPbrsaoafkF6mz7dFutkGXAtIfQLI450u0ypqwA=
 github.com/creachadair/mds v0.27.1/go.mod h1:dMBTCSy3iS3dwh4Rb1zxeZz2d7K8+N24GCTsayWtQRI=
-github.com/creachadair/taskgroup v0.14.2 h1:vPHw50VFJ98Eb+h3S1RYRejK3DE0xpGCXb2ZFtHfFeA=
-github.com/creachadair/taskgroup v0.14.2/go.mod h1:FV5K1BzHUCnTVc04O1WLO+iLmvjfOTnYLTcZaC9ZxbM=
+github.com/creachadair/taskgroup v0.14.3 h1:sjBR7psFRDBy79KFtNs/qbTOh2zTuzaWDmxdA95v2V8=
+github.com/creachadair/taskgroup v0.14.3/go.mod h1:uhCtIEsa7zpeMAFixddhCYjbJi7e4JMyU7OXUygkSsg=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgraph-io/badger/v4 v4.9.1 h1:DocZXZkg5JJHJPtUErA0ibyHxOVUDVoXLSCV6t8NC8w=
