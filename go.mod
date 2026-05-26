@@ -3,19 +3,19 @@ module github.com/creachadair/badgerstore
 go 1.25.0
 
 require (
-	github.com/creachadair/ffs v0.17.9
+	github.com/creachadair/ffs v0.17.11
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 )
 
 require (
-	github.com/creachadair/taskgroup v0.14.3
+	github.com/creachadair/taskgroup v0.14.4
 	github.com/dgraph-io/badger/v4 v4.9.1
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/creachadair/mds v0.27.1 // indirect
+	github.com/creachadair/mds v0.28.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
