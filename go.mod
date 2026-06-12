@@ -4,13 +4,12 @@ go 1.25.0
 
 require (
 	github.com/creachadair/ffs v0.17.11
-	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 )
 
 require (
 	github.com/creachadair/taskgroup v0.14.4
-	github.com/dgraph-io/badger/v4 v4.9.1
+	github.com/dgraph-io/badger/v4 v4.9.2
 )
 
 require (
