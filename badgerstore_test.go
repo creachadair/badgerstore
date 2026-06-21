@@ -107,3 +107,14 @@ func TestListCancel(t *testing.T) {
 		t.Errorf("Closing KV: %v", err)
 	}
 }
+
+func BenchmarkStore(b *testing.B) {
+	dir := b.TempDir()
+	kv, err := badgerstore.NewKV(badgerstore.Options{
+		Badger: badger.DefaultOptions(dir).WithLogger(nil),
+	})
+	if err != nil {
+		b.Fatal(err)
+	}
+	storetest.BenchmarkKV(b, kv)
+}

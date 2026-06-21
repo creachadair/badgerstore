@@ -3,8 +3,8 @@ module github.com/creachadair/badgerstore
 go 1.25.0
 
 require (
-	github.com/creachadair/ffs v0.17.11
-	golang.org/x/sys v0.43.0 // indirect
+	github.com/creachadair/ffs v0.17.12
+	golang.org/x/sys v0.46.0 // indirect
 )
 
 require (
@@ -14,7 +14,7 @@ require (
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/creachadair/mds v0.28.0 // indirect
+	github.com/creachadair/mds v0.29.0 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -26,6 +26,6 @@ require (
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
