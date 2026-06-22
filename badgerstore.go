@@ -310,7 +310,8 @@ func (s KV) Len(ctx context.Context) (int64, error) {
 			var size int64
 			err := s.mon.DB.View(func(txn *badger.Txn) error {
 				it := txn.NewIterator(badger.IteratorOptions{
-					Prefix: []byte(pfx),
+					PrefetchValues: false,
+					Prefix:         []byte(pfx),
 				})
 				defer it.Close()
 
