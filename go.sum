@@ -1,7 +1,5 @@
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
-github.com/creachadair/ffs v0.17.12 h1:BQyGcUxYzLnDMkKdgtJ8zqKh7Qf6xGNNSP/amua5Lxs=
-github.com/creachadair/ffs v0.17.12/go.mod h1:PJxrw+HuNUPshQ4wzy3phqlU9rV9wlQj3gKOaviydy4=
 github.com/creachadair/ffs v0.17.14 h1:WsE0mZDHoxDVhmorssv3RKMyuLPUjKCSA0sJyy7X85I=
 github.com/creachadair/ffs v0.17.14/go.mod h1:PJxrw+HuNUPshQ4wzy3phqlU9rV9wlQj3gKOaviydy4=
 github.com/creachadair/mds v0.29.0 h1:LyR8pWAj2ofsrdJ9s2YoIqN8b6a1djHmPQULD2fTSCA=
