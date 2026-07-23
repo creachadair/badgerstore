@@ -16,6 +16,7 @@
 package badgerstore
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"iter"
@@ -296,8 +297,6 @@ func (s KV) Len(ctx context.Context) (int64, error) {
 		return 0, errClosed
 	}
 
-	// Reaching here, we don't know the size.
-	// Compute and store it.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	g := taskgroup.New(cancel)
@@ -305,23 +304,23 @@ func (s KV) Len(ctx context.Context) (int64, error) {
 	c := taskgroup.Gather(g.Go, func(v int64) { size += v })
 
 	for i := range 256 {
-		pfx := s.prefix.Add(string(byte(i)))
+		tag := []byte{byte(i)}
 		c.Call(func() (int64, error) {
 			var size int64
 			err := s.mon.DB.View(func(txn *badger.Txn) error {
 				it := txn.NewIterator(badger.IteratorOptions{
 					PrefetchValues: false,
-					Prefix:         []byte(pfx),
+					Prefix:         []byte(s.prefix),
 				})
 				defer it.Close()
 
-				for it.Rewind(); it.Valid(); it.Next() {
-					select {
-					case <-ctx.Done():
+				for it.Seek(tag); it.Valid(); it.Next() {
+					if ctx.Err() != nil {
 						return ctx.Err()
-					default:
-						size++
+					} else if !bytes.HasPrefix(it.Item().Key(), tag) {
+						break
 					}
+					size++
 				}
 				return nil
 			})
